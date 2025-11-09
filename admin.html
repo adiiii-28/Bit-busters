@@ -11,7 +11,7 @@
   <script>
     // Require login
     const token = localStorage.getItem('token');
-    if (!token) { window.location.href = 'login.html'; }
+    if (!token) { window.location.href = 'index.html'; }
   </script>
 
   <div class="sidebar">
@@ -23,7 +23,7 @@
       <a href="goals.html" class="nav-link">Goals</a>
       <a href="test.html" class="nav-link">Test</a>
       <a href="admin.html" class="nav-link active">Admin</a>
-      <a href="login.html" class="nav-link logout">Logout</a>
+      <a href="index.html" class="nav-link logout">Logout</a>
     </nav>
   </div>
 
@@ -210,7 +210,7 @@
 
       (async function(){
         const res = await fetch('http://localhost:5000/api/users', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
-        if (res.status === 401) { alert('Not authorized. Please log in again.'); window.location.href = 'login.html'; return; }
+        if (res.status === 401) { alert('Not authorized. Please log in again.'); window.location.href = 'index.html'; return; }
         if (res.status === 403) { alert('Admins only.'); window.location.href = 'dashboard.html'; return; }
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to load users');
@@ -230,7 +230,7 @@
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           localStorage.removeItem("demo_user");
-          window.location.href = "login.html";
+          window.location.href = "index.html";
         });
       }
     });

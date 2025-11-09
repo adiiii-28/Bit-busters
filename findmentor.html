@@ -10,7 +10,7 @@
 <body>
   <script>
     const token = localStorage.getItem("token");
-    if (!token) { window.location.href = "login.html"; }
+    if (!token) { window.location.href = "index.html"; }
   </script>
   <!-- Sidebar -->
   <div class="sidebar">
@@ -21,7 +21,7 @@
       <a href="messages.html" class="nav-link">Messages</a>
       <a href="goals.html" class="nav-link">Goals</a>
       <a href="test.html" class="nav-link">Test</a>
-      <a href="login.html" class="nav-link logout">Logout</a>
+      <a href="index.html" class="nav-link logout">Logout</a>
     </nav>
   </div>
 
@@ -489,7 +489,7 @@
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           localStorage.removeItem("demo_user");
-          window.location.href = "login.html";
+          window.location.href = "index.html";
         });
       }
     });

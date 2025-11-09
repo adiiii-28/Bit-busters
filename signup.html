@@ -44,7 +44,7 @@
         </form>
         
         <div class="login-link">
-            Already have an account? <a href="login.html">Log In</a>
+            Already have an account? <a href="index.html">Log In</a>
         </div>
     </div>
 
@@ -70,7 +70,7 @@
             try { data = await res.json(); } catch {}
             if (!res.ok) throw new Error(data.message || `Signup failed (${res.status})`);
             alert('Signup successful. Please login.');
-            window.location.href = "login.html";
+            window.location.href = "index.html";
           } catch (err) {
             if (err && err.name === 'TypeError') {
               alert("Cannot reach server. Make sure backend is running at " + API_BASE + " and MongoDB is up. Try opening: " + API_BASE + "/health");

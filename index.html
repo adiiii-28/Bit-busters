@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MentorConnect - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
+    <!-- <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBh7taAf24ZUd8eqfspSIyAEKaeZDklHa8",
+    authDomain: "bit-buster.firebaseapp.com",
+    projectId: "bit-buster",
+    storageBucket: "bit-buster.firebasestorage.app",
+    messagingSenderId: "523871466535",
+    appId: "1:523871466535:web:87e13e4c26b78b97564a02",
+    measurementId: "G-ZZYR4332HH"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script> -->
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>Welcome Back to MentorConnect</h2>
+        <form>
+
+            <div class="input-group">
+                <label for="user_id">Email</label>
+                <input type="text" id="user_id" name="user_id" required>
+            </div>
+
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="forgot-password">
+                <a href="signup.html">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="login-button">Log In</button>
+        </form>
+
+        <div class="signup-link">
+            Don't have an account? <a href="signup.html">Sign Up</a>
+        </div>
+    </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const API_BASE = localStorage.getItem('API_BASE') || 'http://localhost:5000';
+    const form = document.querySelector("form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("user_id").value.trim().toLowerCase();
+      const password = document.getElementById("password").value;
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        // If response is not JSON (server down / proxy), this will throw
+        let data = {};
+        try { data = await res.json(); } catch {}
+        if (!res.ok) throw new Error(data.message || `Login failed (${res.status})`);
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("demo_user", data.user.fullName || email);
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        // Network error or CORS typically shows as TypeError: Failed to fetch
+        if (err && err.name === 'TypeError') {
+          alert("Cannot reach server. Make sure backend is running at " + API_BASE + " and MongoDB is up. Try opening: " + API_BASE + "/health");
+        } else {
+          alert(err.message || 'Login failed');
+        }
+      }
+    });
+  });
+ </script>
+
+</body>
+
+</html>
