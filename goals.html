@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MentorConnect - Goals</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css"/>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2 class="brand">MentorConnect</h2>
+    <nav class="nav">
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="findmentor.html" class="nav-link">Find Mentors</a>
+      <a href="messages.html" class="nav-link">Messages</a>
+      <a href="goals.html" class="nav-link active">Goals</a>
+      <a href="test.html" class="nav-link">Test</a>
+      <a href="login.html" class="nav-link logout">Logout</a>
+    </nav>
+  </div>
+
+  <!-- Main -->
+  <div class="main-content">
+    <div class="header" id="headerTitle">Goals</div>
+
+    <!-- KPIs -->
+    <div class="cards" style="grid-template-columns: repeat(auto-fit,minmax(220px,1fr));">
+      <div class="card reveal" id="kpiTotal">
+        <h3>Total Goals</h3>
+        <p id="kpiTotalVal">0</p>
+      </div>
+      <div class="card reveal" id="kpiActive">
+        <h3>Active</h3>
+        <p id="kpiActiveVal">0</p>
+      </div>
+      <div class="card reveal" id="kpiCompleted">
+        <h3>Completed</h3>
+        <p id="kpiCompletedVal">0</p>
+      </div>
+      <div class="card reveal" id="kpiRisk">
+        <h3>At Risk (≤ 3 days)</h3>
+        <p id="kpiRiskVal">0</p>
+      </div>
+    </div>
+
+    <!-- Add goal -->
+    <div class="card reveal" style="display:grid; gap:12px;">
+      <h3 style="margin:0;">Add Goal</h3>
+      <div style="display:grid; gap:10px; grid-template-columns:1fr;
+        @media(min-width:840px){ grid-template-columns: 2fr 1fr 1fr 1fr 1fr }">
+        <div>
+          <label style="font-size:14px;">Title</label>
+          <input id="gTitle" type="text" placeholder="e.g. Finish DSA arrays & strings"
+            style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+        </div>
+        <div>
+          <label style="font-size:14px;">Category</label>
+          <select id="gCategory" style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option>DSA</option>
+            <option>System Design</option>
+            <option>Resume</option>
+            <option>Projects</option>
+            <option>Career</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:14px;">Priority</label>
+          <select id="gPriority" style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option>Low</option>
+            <option selected>Medium</option>
+            <option>High</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:14px;">Due Date</label>
+          <input id="gDue" type="date"
+            style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+        </div>
+        <div>
+          <label style="font-size:14px;">Start %</label>
+          <input id="gProgress" type="number" value="0" min="0" max="100"
+            style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="addGoal"
+          style="padding:10px 14px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">
+          Add Goal
+        </button>
+        <button id="seedDemo"
+          style="padding:10px 14px; border-radius:999px; border:1px solid #232a3b; background:#121722; color:#a9b3c7; cursor:pointer;">
+          Load Demo Goals
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card reveal" style="display:grid; gap:12px;">
+      <h3 style="margin:0;">Filters</h3>
+      <div style="display:grid; gap:10px; grid-template-columns:1fr;
+        @media(min-width:840px){ grid-template-columns: 2fr 1fr 1fr 1fr }">
+        <div>
+          <label style="font-size:14px;">Search</label>
+          <input id="fSearch" type="text" placeholder="Title, category, notes..."
+            style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+        </div>
+        <div>
+          <label style="font-size:14px;">Status</label>
+          <select id="fStatus" style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option value="">Any</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="overdue">Overdue</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:14px;">Category</label>
+          <select id="fCategory" style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option value="">Any</option>
+            <option>DSA</option>
+            <option>System Design</option>
+            <option>Resume</option>
+            <option>Projects</option>
+            <option>Career</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:14px;">Sort</label>
+          <select id="fSort" style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option value="due">Due date</option>
+            <option value="priority">Priority</option>
+            <option value="progress">Progress</option>
+            <option value="title">Title</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div id="goalList" class="cards"></div>
+
+    <!-- Empty -->
+    <div id="empty" class="card reveal" style="display:none; text-align:center; padding:28px;">
+      <div style="font-size:18px; font-weight:600; margin-bottom:8px;">No goals yet</div>
+      <p>Add a goal above to get started.</p>
+    </div>
+  </div>
+
+  <script>
+    // Personalize header
+    const who = localStorage.getItem("demo_user");
+    if (who) document.getElementById("headerTitle").textContent = `Goals — ${who}`;
+
+    // LocalStorage helpers
+    const LS_KEY = "mc_goals";
+    function loadGoals() { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
+    function saveGoals(goals) { localStorage.setItem(LS_KEY, JSON.stringify(goals)); }
+
+    // Seed demo
+    const demoGoals = [
+      { id: uid(), title: "Finish DSA arrays & strings (40 Qs)", category: "DSA", priority: "High", due: plusDays(5), progress: 35, notes: "", completed: false },
+      { id: uid(), title: "System Design: caching + load balancing", category: "System Design", priority: "Medium", due: plusDays(10), progress: 10, notes: "", completed: false },
+      { id: uid(), title: "Resume: STAR bullets for internships", category: "Resume", priority: "High", due: plusDays(2), progress: 80, notes: "", completed: false },
+      { id: uid(), title: "Portfolio project: Auth + CRUD polish", category: "Projects", priority: "Medium", due: plusDays(14), progress: 20, notes: "", completed: false },
+      { id: uid(), title: "Mock interviews: 3 rounds", category: "Career", priority: "Low", due: plusDays(9), progress: 0, notes: "", completed: false }
+    ];
+
+    // DOM
+    const goalList = document.getElementById("goalList");
+    const emptyEl = document.getElementById("empty");
+    const addBtn = document.getElementById("addGoal");
+    const seedBtn = document.getElementById("seedDemo");
+
+    const gTitle = document.getElementById("gTitle");
+    const gCategory = document.getElementById("gCategory");
+    const gPriority = document.getElementById("gPriority");
+    const gDue = document.getElementById("gDue");
+    const gProgress = document.getElementById("gProgress");
+
+    const fSearch = document.getElementById("fSearch");
+    const fStatus = document.getElementById("fStatus");
+    const fCategory = document.getElementById("fCategory");
+    const fSort = document.getElementById("fSort");
+
+    // State
+    let goals = loadGoals();
+
+    // Utilities
+    function uid(){ return Math.random().toString(36).slice(2,9); }
+    function plusDays(n){ const d = new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+    function daysLeft(due){
+      const d = new Date(due); const now = new Date();
+      const diff = Math.ceil((d - new Date(now.toDateString())) / (1000*60*60*24));
+      return diff;
+    }
+    function priorityScore(p){ return {High:3, Medium:2, Low:1}[p] || 0; }
+
+    function statusOf(g){
+      if (g.completed) return "completed";
+      const dl = daysLeft(g.due);
+      if (dl < 0 && g.progress < 100) return "overdue";
+      return "active";
+    }
+
+    // Render KPI
+    function renderKPI(list){
+      const total = list.length;
+      const active = list.filter(g => statusOf(g) === "active").length;
+      const completed = list.filter(g => g.completed).length;
+      const risk = list.filter(g => !g.completed && daysLeft(g.due) <= 3 && daysLeft(g.due) >= 0).length;
+      setText("kpiTotalVal", total);
+      setText("kpiActiveVal", active);
+      setText("kpiCompletedVal", completed);
+      setText("kpiRiskVal", risk);
+    }
+    function setText(id, val){ document.getElementById(id).textContent = val; }
+
+    // Chip helpers
+    function chip(text){
+      return `<span style="display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #232a3b; background:#121722; color:#a9b3c7; font-size:12px;">${text}</span>`;
+    }
+    function priorityPill(p){
+      const grad = p==="High" ? "linear-gradient(90deg,#ef4444,#f59e0b)" : p==="Medium" ? "linear-gradient(90deg,#7c88ff,#3dd2cc)" : "#1a2030";
+      const color = p==="Low" ? "#e8ecf1" : "#fff";
+      return `<span style="display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #232a3b; background:${grad}; color:${color}; font-size:12px;">${p}</span>`;
+    }
+
+    // Progress bar
+    function progressBar(val){
+      return `
+        <div style="height:10px; border-radius:999px; background:#0f1117; border:1px solid #1f2430; overflow:hidden;">
+          <div style="height:100%; width:${val}%; background:linear-gradient(90deg,var(--accent),var(--accent-2));"></div>
+        </div>
+      `;
+    }
+
+    // Card template
+    function card(g){
+      const dl = daysLeft(g.due);
+      const st = statusOf(g);
+      const statusText = g.completed ? "Completed" : (dl < 0 ? `Overdue by ${Math.abs(dl)}d` : `${dl}d left`);
+      const statusColor = g.completed ? "linear-gradient(90deg,#22c55e,#3dd2cc)" : (dl < 0 ? "linear-gradient(90deg,#ef4444,#f43f5e)" : "linear-gradient(90deg,#7c88ff,#3dd2cc)");
+      return `
+        <div class="card reveal" data-id="${g.id}" style="display:grid; gap:10px;">
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <div style="flex:1; min-width:0;">
+              <div contenteditable="true" spellcheck="false" data-edit="title"
+                   style="font-weight:600; outline:none;">${escapeHtml(g.title)}</div>
+              <div style="margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                ${chip(g.category)}
+                ${priorityPill(g.priority)}
+                <span style="display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #232a3b; background:${statusColor}; color:#fff; font-size:12px;">
+                  ${statusText}
+                </span>
+                <span style="color:#a9b3c7; font-size:12px;">Due: ${g.due}</span>
+              </div>
+            </div>
+            <div style="text-align:right; min-width:92px;">
+              <div style="font-weight:600;">${g.progress}%</div>
+              ${progressBar(g.progress)}
+            </div>
+          </div>
+
+          <!-- actions -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button data-act="inc10" style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">+10%</button>
+            <button data-act="dec10" style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#121722; color:#a9b3c7; cursor:pointer;">-10%</button>
+            <button data-act="complete" style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">Mark Done ✓</button>
+            <button data-act="delete" style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#1a2030; color:#ff9ea3; cursor:pointer;">Delete</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Escape HTML
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch])); }
+
+    // Filtering + sorting
+    function applyFilters(){
+      const q = fSearch.value.trim().toLowerCase();
+      const st = fStatus.value;
+      const cat = fCategory.value;
+      const sort = fSort.value;
+
+      let list = goals.filter(g => {
+        const matchQ = !q || [g.title, g.category, g.notes || ""].join(" ").toLowerCase().includes(q);
+        const matchCat = !cat || g.category === cat;
+        const s = statusOf(g);
+        const matchStatus = !st || s === st;
+        return matchQ && matchCat && matchStatus;
+      });
+
+      // sort
+      list.sort((a,b) => {
+        if (sort === "due") return new Date(a.due) - new Date(b.due);
+        if (sort === "priority") return priorityScore(b.priority) - priorityScore(a.priority);
+        if (sort === "progress") return b.progress - a.progress;
+        if (sort === "title") return a.title.localeCompare(b.title);
+        return 0;
+      });
+
+      // render
+      goalList.innerHTML = list.map(card).join("");
+      emptyEl.style.display = list.length ? "none" : "block";
+      renderKPI(goals);
+      hookCardEvents();
+      setupReveal();
+    }
+
+    // Events for each card
+    function hookCardEvents(){
+      goalList.querySelectorAll(".card").forEach(el => {
+        const id = el.getAttribute("data-id");
+        el.querySelectorAll("button[data-act]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const act = btn.getAttribute("data-act");
+            const g = goals.find(x => x.id === id);
+            if (!g) return;
+            if (act === "inc10") g.progress = Math.min(100, g.progress + 10);
+            if (act === "dec10") g.progress = Math.max(0, g.progress - 10);
+            if (act === "complete") { g.progress = 100; g.completed = true; }
+            if (act === "delete") { goals = goals.filter(x => x.id !== id); }
+            saveGoals(goals); applyFilters();
+          });
+        });
+        // inline title edit (debounced)
+        const titleEl = el.querySelector('[data-edit="title"]');
+        let tmr;
+        titleEl.addEventListener("input", () => {
+          clearTimeout(tmr);
+          tmr = setTimeout(() => {
+            const g = goals.find(x => x.id === id);
+            if (g) { g.title = titleEl.textContent.trim(); saveGoals(goals); }
+          }, 250);
+        });
+      });
+    }
+
+    // Reveal animation helper
+    function setupReveal() {
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReduced) {
+        document.querySelectorAll(".reveal").forEach(el => el.classList.add("show"));
+        return;
+      }
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("show"); obs.unobserve(e.target); } });
+      }, { threshold: 0.2 });
+      document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
+    }
+
+    // Add goal
+    addBtn.addEventListener("click", () => {
+      const title = gTitle.value.trim();
+      if (!title) return alert("Please enter a goal title.");
+      const due = gDue.value || plusDays(7);
+      const prog = Math.max(0, Math.min(100, parseInt(gProgress.value || "0", 10)));
+      const g = {
+        id: uid(),
+        title,
+        category: gCategory.value,
+        priority: gPriority.value,
+        due,
+        progress: prog,
+        notes: "",
+        completed: prog >= 100
+      };
+      goals.unshift(g);
+      saveGoals(goals);
+      gTitle.value = ""; gProgress.value = "0";
+      applyFilters();
+    });
+
+    // Seed demo
+    seedBtn.addEventListener("click", () => {
+      if (!goals.length || confirm("Replace current goals with demo data?")) {
+        goals = demoGoals.map(x => ({...x}));
+        saveGoals(goals); applyFilters();
+      }
+    });
+
+    // Filter inputs
+    [fSearch, fStatus, fCategory, fSort].forEach(el => el.addEventListener("input", applyFilters));
+
+    // Init
+    setupReveal();
+    if (!goals.length) { /* keep empty state until user adds/loads */ }
+    applyFilters();
+
+    // Responsive tweak (two-column grid feel using cards)
+    function responsive() {
+      // the .cards container already adapts via CSS; nothing extra needed.
+    }
+    window.addEventListener("resize", responsive);
+  </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MentorConnect - Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <script>
+    // Require login
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = 'login.html'; }
+  </script>
+
+  <div class="sidebar">
+    <h2 class="brand">MentorConnect</h2>
+    <nav class="nav">
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="findmentor.html" class="nav-link">Find Mentors</a>
+      <a href="messages.html" class="nav-link">Messages</a>
+      <a href="goals.html" class="nav-link">Goals</a>
+      <a href="test.html" class="nav-link">Test</a>
+      <a href="admin.html" class="nav-link active">Admin</a>
+      <a href="login.html" class="nav-link logout">Logout</a>
+    </nav>
+  </div>
+
+  <div class="main-content">
+    <div class="header" id="headerTitle">Admin — Users</div>
+
+    <div class="cards">
+      <div class="card reveal">
+        <div style="display:flex; gap:14px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap;">
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+            <div>
+              <div style="color:#a9b3c7; font-size:14px;">Search</div>
+              <input id="search" type="text" placeholder="Name, email, company..."
+                style="width:260px; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1; outline:none;">
+            </div>
+            <div>
+              <div style="color:#a9b3c7; font-size:14px;">Role</div>
+              <select id="fRole" style="width:160px; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+                <option value="">Any</option>
+                <option value="student">Student</option>
+                <option value="alumni">Alumni</option>
+              </select>
+            </div>
+            <div>
+              <div style="color:#a9b3c7; font-size:14px;">Mentor</div>
+              <select id="fMentor" style="width:140px; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+                <option value="">Any</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button id="exportCsv" style="padding:10px 14px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">Export CSV</button>
+            <div id="meta" style="color:#a9b3c7; font-size:14px;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card reveal" style="overflow:auto;">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left; border-bottom:1px solid #1f2430;">
+              <th style="padding:10px;">Name</th>
+              <th style="padding:10px;">Email</th>
+              <th style="padding:10px;">Role</th>
+              <th style="padding:10px;">Mentor</th>
+              <th style="padding:10px;">Company</th>
+              <th style="padding:10px;">Years</th>
+              <th style="padding:10px; cursor:pointer;" data-sort="fullName">Name</th>
+              <th style="padding:10px; cursor:pointer;" data-sort="email">Email</th>
+              <th style="padding:10px; cursor:pointer;" data-sort="role">Role</th>
+              <th style="padding:10px; cursor:pointer;" data-sort="isMentor">Mentor</th>
+              <th style="padding:10px; cursor:pointer;" data-sort="company">Company</th>
+              <th style="padding:10px; cursor:pointer;" data-sort="yearsOfExperience">Years</th>
+              <th style="padding:10px; cursor:pointer;" data-sort="createdAt">Created</th>
+              <th style="padding:10px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div id="empty" style="display:none; color:#a9b3c7; padding:12px;">No users found.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const rowsEl = document.getElementById('rows');
+    const emptyEl = document.getElementById('empty');
+    const metaEl = document.getElementById('meta');
+    const searchEl = document.getElementById('search');
+    const fRole = document.getElementById('fRole');
+    const fMentor = document.getElementById('fMentor');
+    const exportBtn = document.getElementById('exportCsv');
+    let users = [];
+    let sortBy = 'createdAt';
+    let sortDir = 'desc';
+
+    function fmtDate(iso){ try {const d=new Date(iso); return d.toLocaleString();} catch{ return iso||'-'; } }
+    function setMeta(){ metaEl.textContent = `${users.length} users`; }
+    function cmp(a,b){ if(a==null&&b==null) return 0; if(a==null) return -1; if(b==null) return 1; if(typeof a==='string'&&typeof b==='string') return a.localeCompare(b); return a>b?1:a<b?-1:0; }
+    function sortList(list){
+      const dir = sortDir === 'asc' ? 1 : -1;
+      return list.sort((x,y)=> dir*cmp(x[sortBy], y[sortBy]));
+    }
+    function render(list){
+      const sorted = sortList(list.slice());
+      rowsEl.innerHTML = sorted.map(u => `
+        <tr style="border-top:1px solid #1f2430;">
+          <td style="padding:10px;">${u.fullName || '-'}</td>
+          <td style="padding:10px;">${u.email || '-'}</td>
+          <td style="padding:10px;">${u.role || '-'}</td>
+          <td style="padding:10px;">${u.isMentor ? 'Yes' : 'No'}</td>
+          <td style="padding:10px;">${u.company || '-'}</td>
+          <td style="padding:10px;">${u.yearsOfExperience ?? '-'}</td>
+          <td style="padding:10px;">${fmtDate(u.createdAt)}</td>
+          <td style="padding:10px;">
+            <button class="toggle-mentor" data-id="${u._id}" data-value="${!u.isMentor}" style="padding:6px 10px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">
+              ${u.isMentor ? 'Set as Non-mentor' : 'Set as Mentor'}
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      emptyEl.style.display = sorted.length ? 'none' : 'block';
+    }
+
+    function currentFiltered(){
+      const q = searchEl.value.trim().toLowerCase();
+      const role = fRole.value;
+      const mentor = fMentor.value;
+      return users.filter(u => {
+        if (role && u.role !== role) return false;
+        if (mentor === 'true' && !u.isMentor) return false;
+        if (mentor === 'false' && u.isMentor) return false;
+        if (q && ![u.fullName,u.email,u.company,String(u.yearsOfExperience||''),u.role].join(' ').toLowerCase().includes(q)) return false;
+        return true;
+      });
+    }
+
+    function applyFilter(){
+      render(currentFiltered());
+    }
+
+    function thClickHandler(e){
+      const key = e.target.getAttribute('data-sort');
+      if (!key) return;
+      if (sortBy === key) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+      else { sortBy = key; sortDir = key === 'createdAt' ? 'desc' : 'asc'; }
+      applyFilter();
+    }
+
+    function toCsv(rows){
+      const headers = ['Name','Email','Role','Mentor','Company','Years','Created'];
+      const lines = [headers.join(',')];
+      rows.forEach(u=>{
+        const vals = [u.fullName||'',u.email||'',u.role||'',u.isMentor?'Yes':'No',u.company||'',u.yearsOfExperience??'',fmtDate(u.createdAt)||'']
+          .map(v=>`"${String(v).replace(/"/g,'""')}"`);
+        lines.push(vals.join(','));
+      });
+      return lines.join('\n');
+    }
+
+    function downloadCsv(){
+      const rows = currentFiltered();
+      const csv = toCsv(rows);
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'users.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function toggleMentor(id, value){
+      const res = await fetch(`http://localhost:5000/api/users/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('token') },
+        body: JSON.stringify({ isMentor: value })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Update failed');
+      const idx = users.findIndex(u=>String(u._id)===String(id));
+      if (idx>=0) users[idx] = data.user;
+      applyFilter();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const who = localStorage.getItem('demo_user');
+      if (who) document.getElementById('headerTitle').textContent = `Admin — Users (${who})`;
+
+      searchEl.addEventListener('input', applyFilter);
+      fRole.addEventListener('change', applyFilter);
+      fMentor.addEventListener('change', applyFilter);
+      exportBtn.addEventListener('click', downloadCsv);
+
+      document.querySelectorAll('th[data-sort]').forEach(th => th.addEventListener('click', thClickHandler));
+
+      rowsEl.addEventListener('click', (e)=>{
+        const btn = e.target.closest('.toggle-mentor');
+        if (!btn) return;
+        const id = btn.getAttribute('data-id');
+        const value = btn.getAttribute('data-value') === 'true';
+        toggleMentor(id, value).catch(err=>alert(err.message));
+      });
+
+      (async function(){
+        const res = await fetch('http://localhost:5000/api/users', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
+        if (res.status === 401) { alert('Not authorized. Please log in again.'); window.location.href = 'login.html'; return; }
+        if (res.status === 403) { alert('Admins only.'); window.location.href = 'dashboard.html'; return; }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to load users');
+        users = data.users || [];
+        setMeta();
+        applyFilter();
+      })().catch(err=>{ console.error(err); alert('Failed to load users.'); });
+    });
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const logoutLink = document.querySelector(".logout");
+      if (logoutLink) {
+        logoutLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("demo_user");
+          window.location.href = "login.html";
+        });
+      }
+    });
+  </script>
+</body>
+</html>

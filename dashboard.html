@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MentorConnect - Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <script>
+  // Require login to view dashboard
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "login.html";
+  }
+</script>
+  <div class="sidebar">
+    <h2 class="brand">MentorConnect</h2>
+    <nav class="nav">
+      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+      <a href="findmentor.html" class="nav-link">Find Mentors</a>
+      <a href="messages.html" class="nav-link">Messages</a>
+      <a href="goals.html" class="nav-link">Goals Assigned</a>
+      <a href="test.html" class="nav-link">Test</a>
+      <a href="login.html" class="nav-link logout">Logout</a>
+    </nav>
+  </div>
+
+  <div class="main-content">
+    <div class="header" id="welcomeText">Welcome</div>
+
+    <div class="cards">
+      <div class="card reveal" id="mentorMatchesCard">
+        <h3>Your Mentor Matches</h3>
+        <div id="mentorMatches" style="display:grid; gap:8px; margin-top:6px;"></div>
+      </div>
+
+      <div class="card reveal">
+        <h3>Recent Messages</h3>
+        <p>No new messages.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Personalize header
+    const name = localStorage.getItem("demo_user");
+    if (name) {
+      document.getElementById("welcomeText").textContent = `Welcome, ${name}`;
+    }
+
+    // If user is a mentor, change 'Find Mentors' to 'Student Requests' and show pending badge
+    try {
+      const me = JSON.parse(localStorage.getItem("user") || "null");
+      const isMentor = (me && (me.isMentor === true || me.role === 'alumni'));
+      if (isMentor) {
+        const findLink = document.querySelector('.nav a[href="findmentor.html"]');
+        if (findLink) {
+          findLink.textContent = 'Student Requests';
+          findLink.setAttribute('href', 'findmentor.html');
+          // add/update badge
+          const pending = (() => {
+            try {
+              const saved = JSON.parse(localStorage.getItem('mc_mentor_requests') || '[]');
+              const fromState = saved.filter(r => r.status === 'pending').length;
+              const fromCount = parseInt(localStorage.getItem('mc_pending_requests_count') || '0', 10) || 0;
+              return Math.max(fromState, fromCount);
+            } catch { return parseInt(localStorage.getItem('mc_pending_requests_count') || '0', 10) || 0; }
+          })();
+          let badge = findLink.querySelector('.badge');
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.style.cssText = 'margin-left:8px; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid #232a3b; background:linear-gradient(90deg,#7c88ff,#3dd2cc); color:#fff;';
+            findLink.appendChild(badge);
+          }
+          badge.textContent = pending;
+          badge.style.display = pending > 0 ? 'inline-block' : 'none';
+        }
+      }
+    } catch {}
+
+    // Scroll-reveal for cards
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!prefersReduced) {
+      const observer = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("show");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+      document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+    } else {
+      // If reduced motion, skip animations and show immediately
+      document.querySelectorAll(".reveal").forEach(el => el.classList.add("show"));
+    }
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const token = localStorage.getItem("token");
+      const me = JSON.parse(localStorage.getItem("user") || "null");
+      const box = document.getElementById("mentorMatches");
+      if (!box) return;
+
+      // 1) Try AI suggestions (requires token)
+      try {
+        const aiBody = {
+          skills: Array.isArray(me?.skills) ? me.skills : [],
+          academicField: me?.academicField || '',
+          role: me?.role || 'student'
+        };
+        const aiRes = await fetch('http://localhost:5000/api/ai/suggest-mentors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(aiBody)
+        });
+        if (aiRes.ok) {
+          const { suggestions } = await aiRes.json();
+          if (Array.isArray(suggestions) && suggestions.length) {
+            box.innerHTML = suggestions.slice(0,3).map(m => `
+              <div style="display:flex; gap:8px; align-items:center;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#1a2030;border:1px solid #232a3b;display:flex;align-items:center;justify-content:center;font-weight:600;">
+                  ${(m.fullName||'U').split(' ').map(n=>n[0]).join('')}
+                </div>
+                <div style="flex:1;">
+                  <div style="font-weight:600;">${m.fullName || 'Unknown'}</div>
+                  <div style="color:#a9b3c7; font-size:12px;">${m.company || '—'}${m.yearsOfExperience!=null? ' • ' + m.yearsOfExperience + ' yrs' : ''}</div>
+                </div>
+              </div>
+            `).join("");
+          }
+        }
+      } catch {}
+
+      // If still empty, 2) try API mentors list (non-AI)
+      if (!box.innerHTML.trim()) {
+        try {
+          const params = new URLSearchParams();
+          params.set('role', 'alumni');
+          if (me?.skills && Array.isArray(me.skills) && me.skills.length) {
+            params.set('skills', me.skills.join(','));
+          }
+          if (me?.academicField) params.set('academicField', me.academicField);
+          params.set('minYears', '1');
+          const res = await fetch(`http://localhost:5000/api/mentors?${params.toString()}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          if (res.ok) {
+            const data = await res.json();
+            let list = (data.mentors || []).filter(m => !me || String(m._id) !== String(me._id)).slice(0,3);
+            if (list.length) {
+              box.innerHTML = list.map(m => `
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:#1a2030;border:1px solid #232a3b;display:flex;align-items:center;justify-content:center;font-weight:600;">
+                    ${(m.fullName||'U').split(' ').map(n=>n[0]).join('')}
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-weight:600;">${m.fullName || 'Unknown'}</div>
+                    <div style="color:#a9b3c7; font-size:12px;">${m.company || '—'}${m.yearsOfExperience!=null? ' • ' + m.yearsOfExperience + ' yrs' : ''}</div>
+                  </div>
+                </div>
+              `).join("");
+            }
+          }
+        } catch {}
+      }
+
+      // If still empty, leave for dummy fallback script to fill
+      if (!box.innerHTML.trim()) {
+        // no-op; dummy script will populate
+      }
+    });
+  </script>
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const logoutLink = document.querySelector(".logout");
+    if (logoutLink) {
+      logoutLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("demo_user");
+        window.location.href = "login.html";
+      });
+    }
+  });
+</script>
+<script>
+  // Fill dummy mentor suggestions if API didn’t populate anything
+  document.addEventListener('DOMContentLoaded', () => {
+    const box = document.getElementById('mentorMatches');
+    if (!box) return;
+    // If another script already populated, skip
+    const alreadyFilled = box.children && box.children.length > 0;
+    if (alreadyFilled) return;
+
+    const dummy = [
+      { fullName: 'Aditi Sharma', company: 'Google', yearsOfExperience: 5 },
+      { fullName: 'Rohit Mehta', company: 'Qualcomm', yearsOfExperience: 7 },
+      { fullName: 'Neha Verma', company: 'Microsoft', yearsOfExperience: 6 },
+    ];
+
+    box.innerHTML = dummy.map(m => `
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div style="width:32px;height:32px;border-radius:50%;background:#1a2030;border:1px solid #232a3b;display:flex;align-items:center;justify-content:center;font-weight:600;">
+          ${m.fullName.split(' ').map(n=>n[0]).join('')}
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:600;">${m.fullName}</div>
+          <div style="color:#a9b3c7; font-size:12px;">${m.company} • ${m.yearsOfExperience} yrs</div>
+        </div>
+      </div>
+    `).join('');
+  });
+</script>
+</body>
+</html>

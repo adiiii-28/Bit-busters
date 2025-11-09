@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MentorConnect - Messages</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) { window.location.href = "login.html"; }
+  </script>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2 class="brand">MentorConnect</h2>
+    <nav class="nav">
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="findmentor.html" class="nav-link" id="navFindOrRequests">Find Mentors</a>
+      <a href="messages.html" class="nav-link active">Messages</a>
+      <a href="goals.html" class="nav-link">Goals Assigned</a>
+      <a href="test.html" class="nav-link">Test</a>
+      <a href="login.html" class="nav-link logout">Logout</a>
+    </nav>
+  </div>
+
+  <!-- Main -->
+  <div class="main-content">
+    <div class="header" id="headerTitle">Messages</div>
+
+    <!-- Two-column layout (inline styles so we don't touch your CSS file) -->
+    <div class="card reveal" style="padding:0; overflow:hidden;">
+      <div style="display:grid; grid-template-columns: 340px 1fr; min-height: 64vh;">
+        <!-- Conversations list -->
+        <aside style="border-right:1px solid #1f2430; background:#121722;">
+          <!-- Search -->
+          <div style="padding:14px; border-bottom:1px solid #1f2430;">
+            <input id="search" type="text" placeholder="Search people or chats..."
+              style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1; outline:none;">
+          </div>
+
+          <!-- List -->
+          <div id="convList" style="display:grid;"></div>
+        </aside>
+
+        <!-- Chat panel -->
+        <section style="display:flex; flex-direction:column;">
+          <!-- Chat header -->
+          <div id="chatHeader" style="padding:14px; border-bottom:1px solid #1f2430; display:flex; gap:12px; align-items:center; background:#121722;">
+            <div id="chatAvatar" style="width:40px; height:40px; border-radius:50%; background:#1a2030; border:1px solid #232a3b; display:flex; align-items:center; justify-content:center; font-weight:600;">?</div>
+            <div style="flex:1;">
+              <div id="chatName" style="font-weight:600;">Select a conversation</div>
+              <div id="chatMeta" style="color:#a9b3c7; font-size:12px;">—</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="voiceCallBtn" title="Start voice call"
+                style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">Call</button>
+              <button id="videoCallBtn" title="Start video call"
+                style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">Video</button>
+              <button id="hangupBtn" title="Hang up"
+                style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#1a2030; color:#ff9ea3; cursor:pointer; display:none;">Hang up</button>
+              <button id="muteBtn" title="Toggle mic"
+                style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#121722; color:#a9b3c7; cursor:pointer; display:none;">Mic</button>
+              <button id="camBtn" title="Toggle camera"
+                style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#121722; color:#a9b3c7; cursor:pointer; display:none;">Cam</button>
+              <button id="markRead" title="Mark all as read"
+                style="padding:8px 12px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">
+                Mark read
+              </button>
+            </div>
+          </div>
+
+          <!-- Messages area -->
+          <div id="chatBody" style="flex:1; padding:16px; overflow:auto; display:grid; gap:10px; background:linear-gradient(180deg,#141821,#10141d 120%);">
+            <div style="color:#a9b3c7; text-align:center; margin-top:10%;">Pick a chat from the left to start messaging.</div>
+          </div>
+
+          <!-- Input -->
+          <div style="padding:12px; border-top:1px solid #1f2430; display:flex; gap:10px; align-items:center; background:#121722;">
+            <input id="msgInput" type="text" placeholder="Type a message and press Enter..."
+              style="flex:1; padding:12px 14px; border-radius:12px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1; outline:none;">
+            <button id="sendBtn"
+              style="padding:12px 16px; border-radius:12px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">
+              Send
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Optional: recent threads card -->
+    <div class="cards" style="margin-top:16px;">
+      <div class="card reveal">
+        <h3>Tips</h3>
+        <p>Use the search bar to filter conversations. “Mark read” clears unread badges for the open thread.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Personalize header
+    const who = localStorage.getItem("demo_user");
+    if (who) document.getElementById("headerTitle").textContent = `Messages — ${who}`;
+
+    // Mentor-specific nav rename: Find Mentors -> Student Requests, add pending badge
+    try {
+      const me = JSON.parse(localStorage.getItem('user') || 'null');
+      const isMentor = (me && (me.isMentor === true || me.role === 'alumni'));
+      if (isMentor) {
+        const navItem = document.getElementById('navFindOrRequests') || document.querySelector('.nav a[href="findmentor.html"]');
+        if (navItem) {
+          navItem.textContent = 'Student Requests';
+          navItem.setAttribute('href', 'findmentor.html');
+          // pending badge
+          const pending = (() => {
+            try {
+              const saved = JSON.parse(localStorage.getItem('mc_mentor_requests') || '[]');
+              const fromState = saved.filter(r => r.status === 'pending').length;
+              const fromCount = parseInt(localStorage.getItem('mc_pending_requests_count') || '0', 10) || 0;
+              return Math.max(fromState, fromCount);
+            } catch { return parseInt(localStorage.getItem('mc_pending_requests_count') || '0', 10) || 0; }
+          })();
+          let badge = navItem.querySelector('.badge');
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.style.cssText = 'margin-left:8px; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid #232a3b; background:linear-gradient(90deg,#7c88ff,#3dd2cc); color:#fff;';
+            navItem.appendChild(badge);
+          }
+          badge.textContent = pending;
+          badge.style.display = pending > 0 ? 'inline-block' : 'none';
+        }
+      }
+    } catch {}
+
+    // Demo data with lightweight persistence
+    const seedConvs = [
+      {
+        id: "aditi",
+        name: "Aditi Sharma",
+        role: "SWE @ Google",
+        unread: 2,
+        messages: [
+          { from: "aditi", text: "Shared my LeetCode profile link.", at: "09:20" },
+          { from: "me", text: "Great! Let's target arrays this week.", at: "09:26" },
+          { from: "aditi", text: "Cool, can you review my plan?", at: "09:28" }
+        ]
+      },
+      {
+        id: "rohit",
+        name: "Rohit Mehta",
+        role: "Embedded @ Qualcomm",
+        unread: 0,
+        messages: [
+          { from: "rohit", text: "Sent resume PDF for feedback.", at: "Yesterday" },
+          { from: "me", text: "Got it. Will add detailed notes.", at: "Yesterday" }
+        ]
+      },
+      {
+        id: "neha",
+        name: "Neha Verma",
+        role: "PM @ Microsoft",
+        unread: 1,
+        messages: [
+          { from: "neha", text: "Any tips for PM case prep?", at: "08:01" },
+          { from: "me", text: "Practice structure + metrics first.", at: "08:04" }
+        ]
+      }
+    ];
+
+    function loadConvs() {
+      const raw = localStorage.getItem("mc_conversations");
+      return raw ? JSON.parse(raw) : seedConvs;
+    }
+    function saveConvs(convs) {
+      localStorage.setItem("mc_conversations", JSON.stringify(convs));
+    }
+
+    let conversations = loadConvs();
+    let currentId = conversations[0]?.id || null;
+
+    const convListEl = document.getElementById("convList");
+    const chatBodyEl = document.getElementById("chatBody");
+    const chatNameEl = document.getElementById("chatName");
+    const chatMetaEl = document.getElementById("chatMeta");
+    const chatAvatarEl = document.getElementById("chatAvatar");
+    const searchEl = document.getElementById("search");
+    const inputEl = document.getElementById("msgInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const markReadBtn = document.getElementById("markRead");
+
+    function initials(name) {
+      return name.split(" ").map(n => n[0]).join("");
+    }
+
+    function renderList() {
+      const q = searchEl.value.trim().toLowerCase();
+      const items = conversations.filter(c =>
+        !q || [c.name, c.role, ...(c.messages?.map(m => m.text)||[])].join(" ").toLowerCase().includes(q)
+      );
+
+      convListEl.innerHTML = items.map(c => {
+        const last = c.messages?.[c.messages.length - 1];
+        const active = c.id === currentId;
+        return `
+          <button data-id="${c.id}"
+            style="
+              text-align:left; border:0; background:${active ? '#161b27' : 'transparent'};
+              border-bottom:1px solid #1f2430; padding:12px 14px; display:flex; gap:12px; width:100%; cursor:pointer;
+            ">
+            <div style="width:40px; height:40px; border-radius:50%; background:#1a2030; border:1px solid #232a3b; display:flex; align-items:center; justify-content:center; font-weight:600;">
+              ${initials(c.name)}
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.name}</div>
+                ${c.unread ? `<span style="margin-left:auto; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid #232a3b; background:linear-gradient(90deg,#7c88ff,#3dd2cc); color:#fff;">${c.unread}</span>` : ""}
+              </div>
+              <div style="color:#a9b3c7; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${c.role}
+              </div>
+              <div style="color:#a9b3c7; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">
+                ${last ? (last.from === "me" ? "You: " : "") + last.text : "No messages yet"}
+              </div>
+            </div>
+          </button>
+        `;
+      }).join("");
+
+      // Click handlers
+      Array.from(convListEl.querySelectorAll("button[data-id]")).forEach(btn => {
+        btn.addEventListener("click", () => {
+          currentId = btn.getAttribute("data-id");
+          renderList();
+          openChat(currentId);
+        });
+      });
+    }
+
+    function openChat(id) {
+      const c = conversations.find(x => x.id === id);
+      if (!c) return;
+
+      // Header
+      chatNameEl.textContent = c.name;
+      chatMetaEl.textContent = c.role;
+      chatAvatarEl.textContent = initials(c.name);
+
+      // Messages
+      chatBodyEl.innerHTML = "";
+      if (!c.messages || !c.messages.length) {
+        chatBodyEl.innerHTML = `<div style="color:#a9b3c7; text-align:center; margin-top:10%;">Say hi to ${c.name} to start the conversation.</div>`;
+      } else {
+        c.messages.forEach(m => chatBodyEl.appendChild(bubble(m)));
+        chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+      }
+
+      // Connect signaling for this room so we can receive incoming calls
+      ensureWs().catch(()=>{});
+
+      // Clear unread
+      if (c.unread) {
+        c.unread = 0;
+        saveConvs(conversations);
+        renderList();
+      }
+    }
+
+    function bubble(m) {
+      const isMe = m.from === "me";
+      const wrap = document.createElement("div");
+      wrap.className = "reveal show";
+      wrap.style.display = "flex";
+      wrap.style.justifyContent = isMe ? "flex-end" : "flex-start";
+
+      const b = document.createElement("div");
+      b.style.maxWidth = "70%";
+      b.style.padding = "10px 12px";
+      b.style.borderRadius = "12px";
+      b.style.border = "1px solid #232a3b";
+      b.style.background = isMe ? "#161b27" : "#121722";
+      b.style.color = "#e8ecf1";
+      b.style.boxShadow = "0 10px 20px rgba(0,0,0,.25)";
+      b.innerHTML = `<div style="white-space:pre-wrap; word-break:break-word;">${escapeHtml(m.text)}</div>
+                     <div style="text-align:right; color:#a9b3c7; font-size:11px; margin-top:4px;">${m.at || timeNow()}</div>`;
+
+      wrap.appendChild(b);
+      return wrap;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+    }
+
+    function timeNow() {
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+
+    function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text || !currentId) return;
+      inputEl.value = "";
+
+      const c = conversations.find(x => x.id === currentId);
+      if (!c.messages) c.messages = [];
+      const msg = { from: "me", text, at: timeNow() };
+      c.messages.push(msg);
+
+      chatBodyEl.appendChild(bubble(msg));
+      chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+
+      saveConvs(conversations);
+
+      // Fake typing indicator + auto-reply (demo)
+      typingIndicator(true);
+      setTimeout(() => {
+        typingIndicator(false);
+        const reply = { from: currentId, text: "Got it! I'll check and get back to you.", at: timeNow() };
+        c.messages.push(reply);
+        chatBodyEl.appendChild(bubble(reply));
+        chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+        saveConvs(conversations);
+        // If the user navigates away before reply, increment unread
+        if (currentId !== c.id) {
+          c.unread = (c.unread || 0) + 1;
+          renderList();
+        }
+      }, 900 + Math.random() * 900);
+    }
+
+    let typingEl = null;
+    function typingIndicator(on) {
+      if (on) {
+        if (typingEl) return;
+        typingEl = document.createElement("div");
+        typingEl.style.display = "flex";
+        typingEl.style.justifyContent = "flex-start";
+        typingEl.style.opacity = "0.85";
+        typingEl.innerHTML = `
+          <div class="reveal show" style="max-width:60%; padding:8px 10px; border-radius:12px; border:1px solid #232a3b; background:#121722;">
+            <span style="display:inline-block; min-width:44px;">
+              <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#a9b3c7; margin-right:4px; animation: dot1 1s infinite;"></span>
+              <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#a9b3c7; margin-right:4px; animation: dot2 1s infinite;"></span>
+              <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#a9b3c7; animation: dot3 1s infinite;"></span>
+            </span>
+          </div>
+        `;
+        chatBodyEl.appendChild(typingEl);
+        chatBodyEl.scrollTop = chatBodyEl.scrollHeight;
+
+        // Inline keyframes so we don't touch your CSS
+        const style = document.createElement("style");
+        style.textContent = `
+          @keyframes dot1 { 0%{opacity:.3} 20%{opacity:1} 100%{opacity:.3} }
+          @keyframes dot2 { 0%{opacity:.3} 40%{opacity:1} 100%{opacity:.3} }
+          @keyframes dot3 { 0%{opacity:.3} 60%{opacity:1} 100%{opacity:.3} }
+        `;
+        document.head.appendChild(style);
+      } else if (typingEl) {
+        typingEl.remove();
+        typingEl = null;
+      }
+    }
+
+    // Mark all as read for current chat
+    markReadBtn.addEventListener("click", () => {
+      const c = conversations.find(x => x.id === currentId);
+      if (!c) return;
+      c.unread = 0;
+      saveConvs(conversations);
+      renderList();
+    });
+
+    // Wire input
+    sendBtn.addEventListener("click", sendMessage);
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Search
+    searchEl.addEventListener("input", renderList);
+
+    // Reveal animation for outer card (respecting your pattern)
+    setupReveal();
+    function setupReveal() {
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReduced) {
+        document.querySelectorAll(".reveal").forEach(el => el.classList.add("show"));
+        return;
+      }
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("show"); obs.unobserve(e.target);} });
+      }, { threshold: 0.2 });
+      document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
+    }
+
+    // Initialize
+    renderList();
+    if (currentId) openChat(currentId);
+
+    // Responsive tweak: collapse to single column on small screens
+    function applyResponsive() {
+      const container = document.querySelector(".card > div");
+      if (!container) return;
+      if (window.innerWidth < 840) {
+        container.style.gridTemplateColumns = "1fr";
+        container.querySelector("aside").style.minHeight = "40vh";
+      } else {
+        container.style.gridTemplateColumns = "340px 1fr";
+      }
+    }
+    window.addEventListener("resize", applyResponsive);
+    applyResponsive();
+
+    // ============== WebRTC calling (signaling over WebSocket) ==============
+    const callArea = document.getElementById('callArea');
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const voiceBtn = document.getElementById('voiceCallBtn');
+    const videoBtn = document.getElementById('videoCallBtn');
+    const hangupBtn = document.getElementById('hangupBtn');
+    const muteBtn = document.getElementById('muteBtn');
+    const camBtn = document.getElementById('camBtn');
+
+    let pc = null;
+    let ws = null;
+    let localStream = null;
+    let roomWsUrl = null;
+
+    // small logger
+    function log(...a){ try{ console.debug('[RTC]', ...a);}catch{} }
+
+    // preview state
+    let previewWantVideo = false;
+    let previewStream = null;
+
+    function uiInCall(inCall){
+      callArea.style.display = inCall ? 'block' : 'none';
+      hangupBtn.style.display = inCall ? 'inline-block' : 'none';
+      muteBtn.style.display = inCall ? 'inline-block' : 'none';
+      camBtn.style.display = inCall ? 'inline-block' : 'none';
+    }
+
+    function getRoomId(){ return currentId || 'lobby'; }
+    function getUser(){ try { return (JSON.parse(localStorage.getItem('user'))?.fullName) || 'me'; } catch { return 'me'; } }
+
+    function ensureWs(){
+      const url = `ws://localhost:5000/?room=${encodeURIComponent(getRoomId())}&user=${encodeURIComponent(getUser())}`;
+      if (ws && roomWsUrl === url && ws.readyState === WebSocket.OPEN) return Promise.resolve();
+      roomWsUrl = url;
+      if (ws) try { ws.close(); } catch {}
+      return new Promise((resolve) => {
+        ws = new WebSocket(url);
+        ws.onopen = () => { log('WS open'); resolve(); };
+        ws.onclose = () => log('WS closed');
+        ws.onerror = (e) => log('WS error', e);
+        ws.onmessage = async (ev) => {
+          let msg; try { msg = JSON.parse(ev.data); } catch { return; }
+          log('ws<-', msg.type);
+          if (msg.type === 'offer') {
+            await createPeer();
+            await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+            await addLocalTracks(false); // ensure audio at least
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'answer', sdp: answer.sdp }));
+            uiInCall(true); // show in-call UI on callee
+          } else if (msg.type === 'answer') {
+            if (pc) await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+          } else if (msg.type === 'ice') {
+            if (pc && msg.candidate) {
+              try { await pc.addIceCandidate(msg.candidate); } catch {}
+            }
+          } else if (msg.type === 'peer-left') {
+            endCall();
+          }
+        };
+      });
+    }
+
+    async function createPeer(){
+      if (pc) return pc;
+      pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      pc.onicecandidate = (e) => { if (e.candidate && ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type:'ice', candidate: e.candidate })); };
+      pc.oniceconnectionstatechange = () => log('iceState=', pc.iceConnectionState);
+      pc.ontrack = (e) => { remoteVideo.srcObject = e.streams[0]; };
+      return pc;
+    }
+
+    async function addLocalTracks(wantVideo){
+      if (!localStream) {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantVideo });
+        localVideo.srcObject = localStream;
+      }
+      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    }
+
+    async function startCall(wantVideo){
+      await ensureWs();
+      await createPeer();
+      await addLocalTracks(wantVideo);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type:'offer', sdp: offer.sdp }));
+      uiInCall(true);
+    }
+
+    function endCall(){
+      if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+      if (pc) { try { pc.getSenders().forEach(s=>pc.removeTrack(s)); pc.close(); } catch{} pc = null; }
+      uiInCall(false);
+    }
+
+    function toggleMic(){
+      if (!localStream) return;
+      localStream.getAudioTracks().forEach(t => t.enabled = !t.enabled);
+      muteBtn.textContent = localStream.getAudioTracks()[0]?.enabled ? 'Mic' : 'Unmute';
+    }
+
+    function toggleCam(){
+      if (!localStream) return;
+      localStream.getVideoTracks().forEach(t => t.enabled = !t.enabled);
+      camBtn.textContent = localStream.getVideoTracks()[0]?.enabled ? 'Cam' : 'Show Cam';
+    }
+
+    // ---------- Pre-call preview dialog logic ----------
+    const previewOverlay = document.getElementById('previewOverlay');
+    const previewVideo = document.getElementById('previewVideo');
+    const previewMicBtn = document.getElementById('previewMicBtn');
+    const previewCamBtn = document.getElementById('previewCamBtn');
+    const previewStartBtn = document.getElementById('previewStartBtn');
+    const previewCancelBtn = document.getElementById('previewCancelBtn');
+    const previewClose = document.getElementById('previewClose');
+
+    async function openPreview(wantVideo){
+      previewWantVideo = !!wantVideo;
+      try {
+        // get preview stream
+        previewStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantVideo });
+        previewVideo.srcObject = previewStream;
+      } catch (e) {
+        alert('Unable to access microphone/camera');
+        return;
+      }
+      previewOverlay.style.display = 'flex';
+      // init button labels
+      previewMicBtn.textContent = 'Mic';
+      previewCamBtn.textContent = 'Cam';
+    }
+
+    function closePreview(){
+      previewOverlay.style.display = 'none';
+      if (previewStream) { previewStream.getTracks().forEach(t=>t.stop()); previewStream = null; }
+    }
+
+    function togglePreviewMic(){
+      if (!previewStream) return;
+      previewStream.getAudioTracks().forEach(t => t.enabled = !t.enabled);
+      const en = previewStream.getAudioTracks()[0]?.enabled;
+      previewMicBtn.textContent = en ? 'Mic' : 'Unmute';
+    }
+
+    function togglePreviewCam(){
+      if (!previewStream) return;
+      previewStream.getVideoTracks().forEach(t => t.enabled = !t.enabled);
+      const en = previewStream.getVideoTracks()[0]?.enabled;
+      previewCamBtn.textContent = en ? 'Cam' : 'Show Cam';
+    }
+
+    async function startFromPreview(){
+      if (previewStream) {
+        // reuse preview stream as localStream for the call
+        localStream = previewStream;
+        previewStream = null; // ownership handed to call UI
+      }
+      closePreview();
+      await startCall(previewWantVideo);
+    }
+
+    previewMicBtn.addEventListener('click', togglePreviewMic);
+    previewCamBtn.addEventListener('click', togglePreviewCam);
+    previewStartBtn.addEventListener('click', startFromPreview);
+    previewCancelBtn.addEventListener('click', closePreview);
+    previewClose.addEventListener('click', closePreview);
+
+    // ---------- Bind header buttons ----------
+    voiceBtn.addEventListener('click', ()=> openPreview(false));
+    videoBtn.addEventListener('click', ()=> openPreview(true));
+    hangupBtn.addEventListener('click', endCall);
+    muteBtn.addEventListener('click', toggleMic);
+    camBtn.addEventListener('click', toggleCam);
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const logoutLink = document.querySelector(".logout");
+      if (logoutLink) {
+        logoutLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("demo_user");
+          window.location.href = "login.html";
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MentorConnect - Find Mentors</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) { window.location.href = "login.html"; }
+  </script>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2 class="brand">MentorConnect</h2>
+    <nav class="nav">
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="findmentor.html" class="nav-link active" id="navFindOrRequests">Find Mentors</a>
+      <a href="messages.html" class="nav-link">Messages</a>
+      <a href="goals.html" class="nav-link">Goals</a>
+      <a href="test.html" class="nav-link">Test</a>
+      <a href="login.html" class="nav-link logout">Logout</a>
+    </nav>
+  </div>
+
+  <!-- Main -->
+  <div class="main-content">
+    <div class="header" id="headerTitle">Find Mentors</div>
+
+    <!-- Mentor view container (hidden by default) -->
+    <div id="mentorView" class="cards" style="display:none;">
+      <div class="card reveal">
+        <h3>Student Requests</h3>
+        <div id="requestsList" style="display:grid; gap:10px; margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <!-- Student view: Filters & Results (visible by default) -->
+    <div id="studentView">
+      <!-- Filters -->
+      <div class="card reveal" style="display:grid; gap:12px;">
+        <div style="display:grid; gap:10px; grid-template-columns: 1fr; 
+          @media(min-width:840px){ grid-template-columns: 2fr 1fr 1fr 1fr 1fr }">
+        <!-- Search -->
+        <div>
+          <label style="font-size:14px;">Search</label>
+          <input id="q" type="text" placeholder="Name, company, topic..."
+            style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1; outline:none;">
+        </div>
+
+        <!-- Skill -->
+        <div>
+          <label style="font-size:14px;">Skill</label>
+          <select id="skill" style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option value="">Any</option>
+          </select>
+        </div>
+
+        <!-- Min Rating -->
+        <div>
+          <label style="font-size:14px;">Min rating</label>
+          <select id="rating" style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option value="0">Any</option>
+            <option value="3">3★+</option>
+            <option value="4">4★+</option>
+            <option value="4.5">4.5★+</option>
+          </select>
+        </div>
+
+        <!-- Experience -->
+        <div>
+          <label style="font-size:14px;">Experience</label>
+          <select id="exp" style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option value="">Any</option>
+            <option value="0-2">0–2 yrs</option>
+            <option value="3-5">3–5 yrs</option>
+            <option value="6-10">6–10 yrs</option>
+            <option value="10+">10+ yrs</option>
+          </select>
+        </div>
+
+        <!-- Availability -->
+        <div>
+          <label style="font-size:14px;">Availability</label>
+          <select id="avail" style="width:100%; margin-top:6px; padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option value="">Any</option>
+            <option value="open">Open</option>
+            <option value="busy">Limited</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:6px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button id="apply" class="reveal show"
+            style="padding:10px 14px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">
+            Apply Filters
+          </button>
+          <button id="clear"
+            style="padding:10px 14px; border-radius:999px; border:1px solid #232a3b; background:#121722; color:#a9b3c7; cursor:pointer;">
+            Clear
+          </button>
+        </div>
+
+        <div>
+          <label style="font-size:14px; margin-right:8px;">Sort</label>
+          <select id="sort" style="padding:10px 12px; border-radius:10px; border:1px solid #1f2430; background:#10141d; color:#e8ecf1;">
+            <option value="match">Best match</option>
+            <option value="rating">Rating</option>
+            <option value="name">Name</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="cards"></div>
+
+    <!-- Empty state -->
+    <div id="empty" class="card reveal" style="display:none; text-align:center; padding:28px;">
+      <div style="font-size:18px; font-weight:600; margin-bottom:8px;">No mentors found</div>
+      <p>Try broadening your filters or searching a different topic.</p>
+    </div>
+  </div>
+
+  <script>
+    // Data source (will be replaced by API if available)
+    let mentors = [
+      {
+        id: 1, name: "Aditi Sharma", company: "Google", role: "SWE", exp: 5,
+        skills: ["DSA","System Design","Web"], rating: 4.9, availability: "open",
+        bio: "Ex-GSoC, helps with FAANG prep and resume polish.",
+        avatar: "",
+      },
+      {
+        id: 2, name: "Rohit Mehta", company: "Qualcomm", role: "Embedded Eng.", exp: 7,
+        skills: ["C/C++","Firmware","Interview"], rating: 4.6, availability: "busy",
+        bio: "Low-level systems, interview drills, and project guidance.",
+        avatar: "",
+      },
+      {
+        id: 3, name: "Neha Verma", company: "Microsoft", role: "PM", exp: 6,
+        skills: ["Product","Roadmaps","Case Prep"], rating: 4.8, availability: "open",
+        bio: "Breaks down PM interviews and portfolio storytelling.",
+        avatar: "",
+      },
+      {
+        id: 4, name: "Karan Singh", company: "NVIDIA", role: "Research Eng.", exp: 4,
+        skills: ["ML/AI","CUDA","Paper Reading"], rating: 4.5, availability: "busy",
+        bio: "ML foundations, CUDA optimization, and research navigation.",
+        avatar: "",
+      },
+      {
+        id: 5, name: "Priya Iyer", company: "Stripe", role: "Full-stack", exp: 8,
+        skills: ["Web","System Design","Backend"], rating: 4.7, availability: "open",
+        bio: "End-to-end web systems, design reviews, and mock interviews.",
+        avatar: "",
+      },
+      {
+        id: 6, name: "Aman Gupta", company: "Atlassian", role: "Front-end", exp: 3,
+        skills: ["React","TypeScript","UI/UX"], rating: 4.4, availability: "open",
+        bio: "Modern React patterns, DX, and portfolio projects.",
+        avatar: "",
+      },
+    ];
+
+    // Populate skills after data is loaded
+    function populateSkills() {
+      const allSkills = Array.from(new Set(mentors.flatMap(m => m.skills))).sort();
+      const skillSel = document.getElementById("skill");
+      // clear previous except first option
+      while (skillSel.options.length > 1) skillSel.remove(1);
+      allSkills.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s; opt.textContent = s;
+        skillSel.appendChild(opt);
+      });
+    }
+
+    // Helpers
+    const qs = id => document.getElementById(id);
+    const resultsEl = qs("results");
+    const emptyEl = qs("empty");
+
+    function starBar(rating) {
+      const full = "★".repeat(Math.floor(rating));
+      const half = (rating % 1 >= 0.5) ? "½" : "";
+      const empty = "☆".repeat(5 - Math.ceil(rating));
+      return `<span title="${rating.toFixed(1)} / 5">${full}${half}${empty}</span>`;
+    }
+
+    function skillChips(skills) {
+      return skills.map(s =>
+        `<span style="
+          display:inline-block; margin:4px 6px 0 0; padding:6px 10px;
+          border:1px solid #1f2430; border-radius:999px; background:#121722; color:#a9b3c7;
+          font-size:12px;">${s}</span>`
+      ).join("");
+    }
+
+    function availabilityPill(state) {
+      const color = state === "open" ? "linear-gradient(90deg,#7c88ff,#3dd2cc)" : "#1a2030";
+      const text = state === "open" ? "Open to mentor" : "Limited";
+      return `<span style="
+        display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #232a3b;
+        background:${color}; color:#fff; font-size:12px;">${text}</span>`;
+    }
+
+    function makeCard(m) {
+      return `
+        <div class="card reveal" style="display:grid; gap:12px;">
+          <div style="display:flex; gap:12px; align-items:center;">
+            <div style="
+                width:48px; height:48px; border-radius:50%; background:#1a2030; border:1px solid #232a3b;
+                display:flex; align-items:center; justify-content:center; font-weight:600;">
+              ${m.name.split(" ").map(n => n[0]).join("")}
+            </div>
+            <div style="flex:1;">
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <div style="font-weight:600; font-size:16px;">${m.name}</div>
+                <div style="color:#a9b3c7;">• ${m.role} @ ${m.company}</div>
+                <div style="margin-left:auto;">${starBar(m.rating)}</div>
+              </div>
+              <div style="color:#a9b3c7; font-size:14px; margin-top:4px;">
+                ${m.exp} yrs experience • ${availabilityPill(m.availability)}
+              </div>
+            </div>
+          </div>
+
+          <div style="color:#a9b3c7;">${m.bio}</div>
+          <div>${skillChips(m.skills)}</div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">
+            <button data-id="${m.id}" class="request-btn"
+              style="padding:10px 14px; border-radius:999px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">
+              Request Mentorship
+            </button>
+            <button
+              style="padding:10px 14px; border-radius:999px; border:1px solid #232a3b; background:#121722; color:#a9b3c7; cursor:pointer;">
+              View Profile
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function applyFilters() {
+      const q = qs("q").value.trim().toLowerCase();
+      const skill = qs("skill").value;
+      const minRating = parseFloat(qs("rating").value);
+      const exp = qs("exp").value;
+      const avail = qs("avail").value;
+      const sort = qs("sort").value;
+
+      let list = mentors.filter(m => {
+        const matchQ = !q || [m.name, m.company, m.role, ...m.skills, m.bio].join(" ").toLowerCase().includes(q);
+        const matchSkill = !skill || m.skills.includes(skill);
+        const matchRating = !minRating || m.rating >= minRating;
+        const matchAvail = !avail || m.availability === avail;
+
+        let matchExp = true;
+        if (exp) {
+          if (exp === "0-2") matchExp = m.exp <= 2;
+          else if (exp === "3-5") matchExp = m.exp >= 3 && m.exp <= 5;
+          else if (exp === "6-10") matchExp = m.exp >= 6 && m.exp <= 10;
+          else if (exp === "10+") matchExp = m.exp >= 10;
+        }
+
+        return matchQ && matchSkill && matchRating && matchAvail && matchExp;
+      });
+
+      // Sort
+      if (sort === "rating") {
+        list.sort((a,b) => b.rating - a.rating);
+      } else if (sort === "name") {
+        list.sort((a,b) => a.name.localeCompare(b.name));
+      } else {
+        // naive "match" score: rating + skill hit + availability boost
+        list.sort((a,b) => score(b) - score(a));
+      }
+
+      // Render
+      resultsEl.innerHTML = list.map(makeCard).join("");
+
+      // Empty state
+      emptyEl.style.display = list.length ? "none" : "block";
+
+      // Hook up reveal animations
+      setupReveal();
+
+      // Hook up Request buttons (demo)
+      document.querySelectorAll(".request-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-id");
+          const m = mentors.find(x => String(x.id) === String(id));
+          if (!m) return;
+          btn.textContent = "Request Sent ✓";
+          btn.style.background = "#1a2030";
+          btn.style.color = "#a9b3c7";
+          btn.disabled = true;
+
+          // (Optional) persist simple state for demo
+          const sent = JSON.parse(localStorage.getItem("mc_requests") || "[]");
+          if (!sent.includes(m.id)) {
+            sent.push(m.id);
+            localStorage.setItem("mc_requests", JSON.stringify(sent));
+          }
+        });
+      });
+    }
+
+    function score(m) {
+      let s = m.rating;
+      const selSkill = qs("skill").value;
+      if (selSkill && m.skills.includes(selSkill)) s += 0.4;
+      if (m.availability === "open") s += 0.2;
+      return s;
+    }
+
+    // Reveal on scroll (reuse your pattern)
+    function setupReveal() {
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReduced) {
+        document.querySelectorAll(".reveal").forEach(el => el.classList.add("show"));
+        return;
+      }
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("show");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.2 });
+      document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+    }
+
+    // Restore simple persisted state for "Request Sent" badge
+    function restoreRequests() {
+      const sent = JSON.parse(localStorage.getItem("mc_requests") || "[]");
+      sent.forEach(id => {
+        const btn = document.querySelector(`.request-btn[data-id="${id}"]`);
+        if (btn) {
+          btn.textContent = "Request Sent ✓";
+          btn.style.background = "#1a2030";
+          btn.style.color = "#a9b3c7";
+          btn.disabled = true;
+        }
+      });
+    }
+
+    // Wire controls
+    qs("apply").addEventListener("click", applyFilters);
+    qs("clear").addEventListener("click", () => {
+      qs("q").value = "";
+      qs("skill").value = "";
+      qs("rating").value = "0";
+      qs("exp").value = "";
+      qs("avail").value = "";
+      qs("sort").value = "match";
+      applyFilters();
+    });
+    ["q","skill","rating","exp","avail","sort"].forEach(id => {
+      document.getElementById(id).addEventListener("change", applyFilters);
+      if (id === "q") document.getElementById(id).addEventListener("keyup", (e) => {
+        if (e.key === "Enter") applyFilters();
+      });
+    });
+
+    // Personalize header and adapt for mentor view
+    const name = localStorage.getItem("demo_user");
+    if (name) document.getElementById("headerTitle").textContent = `Find Mentors — ${name}`;
+
+    // If mentor, rename nav link to Student Requests immediately
+    try {
+      const me = JSON.parse(localStorage.getItem('user') || 'null');
+      const isMentor = (me && (me.isMentor === true || me.role === 'alumni'));
+      if (isMentor) {
+        const navItem = document.getElementById('navFindOrRequests');
+        if (navItem) { navItem.textContent = 'Student Requests'; navItem.setAttribute('href','student-requests.html'); }
+      }
+    } catch {}
+
+    // Try to load from backend
+    async function loadFromAPI() {
+      try {
+        const token = localStorage.getItem('token');
+        const params = new URLSearchParams();
+        // initial load without filters; apply client-side
+        const res = await fetch('http://localhost:5000/api/mentors', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!res.ok) throw new Error('Failed to load mentors');
+        const data = await res.json();
+        const apiMentors = (data.mentors || []).map((u, idx) => ({
+          id: u._id || idx + 1,
+          name: u.fullName || 'Unknown',
+          company: u.company || '—',
+          role: u.role === 'alumni' ? 'Alumni' : 'Student',
+          exp: typeof u.yearsOfExperience === 'number' ? u.yearsOfExperience : 0,
+          skills: Array.isArray(u.skills) ? u.skills : [],
+          rating: 4.5,
+          availability: u.isMentor ? 'open' : 'busy',
+          bio: ''
+        }));
+        if (apiMentors.length) {
+          mentors = apiMentors;
+        }
+      } catch (e) {
+        // Keep demo data if API not available
+        console.warn('Using demo mentors:', e.message);
+      }
+    }
+
+    (async function init() {
+      try {
+        const me = JSON.parse(localStorage.getItem('user') || 'null');
+        const isMentor = (me && (me.isMentor === true || me.role === 'alumni'));
+        if (isMentor) {
+          // Switch to mentor view
+          const header = document.getElementById('headerTitle');
+          if (header) header.textContent = 'Student Requests' + (name ? ` — ${name}` : '');
+          const studentView = document.getElementById('studentView');
+          const mentorView = document.getElementById('mentorView');
+          if (studentView) studentView.style.display = 'none';
+          if (mentorView) mentorView.style.display = 'block';
+
+          // Demo requests list (replace with backend when available)
+          const requests = [
+            { id: 'req1', name: 'Aman Kumar', topic: 'DSA', note: 'Need help with trees & graphs', at: 'Today' },
+            { id: 'req2', name: 'Simran Kaur', topic: 'Web Dev', note: 'Portfolio review + React patterns', at: 'Yesterday' },
+            { id: 'req3', name: 'Rahul Jain', topic: 'System Design', note: 'Mock interviews this week', at: '2 days ago' },
+          ];
+          const list = document.getElementById('requestsList');
+          if (list) {
+            list.innerHTML = requests.map(r => `
+              <div class="card reveal show" style="display:flex; gap:12px; align-items:flex-start;">
+                <div style="width:36px; height:36px; border-radius:50%; background:#1a2030; border:1px solid #232a3b; display:flex; align-items:center; justify-content:center; font-weight:600;">
+                  ${r.name.split(' ').map(n=>n[0]).join('')}
+                </div>
+                <div style="flex:1;">
+                  <div style="display:flex; gap:8px; align-items:center;">
+                    <div style="font-weight:600;">${r.name}</div>
+                    <span style="margin-left:auto; color:#a9b3c7; font-size:12px;">${r.at}</span>
+                  </div>
+                  <div style="color:#a9b3c7; font-size:14px; margin-top:2px;">Topic: ${r.topic}</div>
+                  <div style="color:#a9b3c7; font-size:14px; margin-top:4px;">${r.note}</div>
+                  <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button data-id="${r.id}" class="req-accept" style="padding:8px 12px; border-radius:10px; border:1px solid #232a3b; background:#161b27; color:#e8ecf1; cursor:pointer;">Accept</button>
+                    <button data-id="${r.id}" class="req-decline" style="padding:8px 12px; border-radius:10px; border:1px solid #232a3b; background:#121722; color:#a9b3c7; cursor:pointer;">Decline</button>
+                    <a href="messages.html" style="margin-left:auto; padding:8px 12px; border-radius:10px; border:1px solid #232a3b; background:#1a2030; color:#e8ecf1; text-decoration:none;">Message</a>
+                  </div>
+                </div>
+              </div>
+            `).join('');
+
+            // Wire demo actions
+            list.querySelectorAll('.req-accept').forEach(btn => {
+              btn.addEventListener('click', () => { btn.textContent = 'Accepted ✓'; btn.disabled = true; });
+            });
+            list.querySelectorAll('.req-decline').forEach(btn => {
+              btn.addEventListener('click', () => { const wrap = btn.closest('.card'); if (wrap) wrap.remove(); });
+            });
+          }
+        } else {
+          // Student experience
+          await loadFromAPI();
+          populateSkills();
+          applyFilters();
+          setTimeout(restoreRequests, 0);
+        }
+      } catch (e) {
+        // Fallback to student experience
+        await loadFromAPI();
+        populateSkills();
+        applyFilters();
+        setTimeout(restoreRequests, 0);
+      }
+    })();
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const logoutLink = document.querySelector(".logout");
+      if (logoutLink) {
+        logoutLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("demo_user");
+          window.location.href = "login.html";
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Profile Setup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+
+<div class="bg-white p-8 shadow-lg rounded-lg w-full max-w-md">
+  <h2 class="text-2xl font-bold mb-4 text-center text-blue-600">Complete Your Profile</h2>
+
+  <div class="space-y-3">
+    <input id="name" type="text" placeholder="Name" class="w-full border p-2 rounded">
+
+    <select id="role" class="w-full border p-2 rounded">
+      <option value="student">Student</option>
+      <option value="alumni">Alumni</option>
+    </select>
+
+    <input id="department" type="text" placeholder="Department (e.g. CSE, IT)" class="w-full border p-2 rounded">
+
+    <input id="skills" type="text" placeholder="Skills (comma separated)" class="w-full border p-2 rounded">
+
+    <input id="interests" type="text" placeholder="Interests (comma separated)" class="w-full border p-2 rounded">
+
+    <button id="saveBtn" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+      Save Profile
+    </button>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
+
+<script>
+  // SAME CONFIG as login page (copy paste your config here)
+  const firebaseConfig = { /* YOUR FIREBASE CONFIG HERE */ };
+  firebase.initializeApp(firebaseConfig);
+
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  document.getElementById("saveBtn").onclick = async () => {
+    const user = auth.currentUser;
+    if (!user) return alert("Not logged in");
+
+    const profileData = {
+      uid: user.uid,
+      name: document.getElementById("name").value,
+      role: document.getElementById("role").value,
+      department: document.getElementById("department").value,
+      skills: document.getElementById("skills").value.split(",").map(s=>s.trim()),
+      interests: document.getElementById("interests").value.split(",").map(s=>s.trim())
+    };
+
+    await db.collection("users").doc(user.uid).set(profileData);
+
+    alert("Profile Saved!");
+    window.location.href = "dashboard.html"; // next page
+  };
+</script>
+
+<script>
+  // Backend-powered profile save overriding Firebase block above
+  (function(){
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // Not logged in; go to login
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // Prefill from backend if available
+    async function prefill(){
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/me', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        if (!res.ok) return;
+        const ct = res.headers.get('content-type') || '';
+        const payload = ct.includes('application/json') ? await res.json() : { user: null };
+        const { user } = payload;
+        if (user?.fullName) document.getElementById('name').value = user.fullName;
+        if (user?.role) document.getElementById('role').value = user.role;
+        if (user?.academicField) document.getElementById('department').value = user.academicField;
+        if (Array.isArray(user?.skills)) document.getElementById('skills').value = user.skills.join(', ');
+      } catch {}
+    }
+
+    async function save(){
+      const fullName = (document.getElementById('name')?.value || '').trim();
+      const role = document.getElementById('role')?.value || 'student';
+      const academicField = (document.getElementById('department')?.value || '').trim();
+      const skills = (document.getElementById('skills')?.value || '').split(',').map(s=>s.trim()).filter(Boolean);
+      // interests not stored in backend user model; omit
+
+      const body = { fullName, role, academicField, skills, isMentor: role === 'alumni' };
+
+      const res = await fetch('http://localhost:5000/api/auth/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify(body)
+      });
+      const ct = res.headers.get('content-type') || '';
+      const payload = ct.includes('application/json') ? await res.json() : { message: await res.text() };
+      if (!res.ok) throw new Error(payload.message || 'Failed to save profile');
+
+      // Cache and go to dashboard
+      localStorage.setItem('user', JSON.stringify(payload.user));
+      localStorage.setItem('demo_user', (payload.user && payload.user.fullName) || fullName);
+      window.location.href = 'dashboard.html';
+    }
+
+    // Wire save button to backend save
+    const btn = document.getElementById('saveBtn');
+    if (btn) {
+      btn.addEventListener('click', function(e){ e.preventDefault(); save().catch(err=>alert(err.message)); });
+    }
+
+    prefill();
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MentorConnect - Test</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "login.html";
+    }
+  </script>
+  <script>
+    try {
+      const me = JSON.parse(localStorage.getItem('user') || 'null');
+      const isMentor = (me && (me.isMentor === true || me.role === 'alumni'));
+      if (isMentor) {
+        const navItem = document.getElementById('navFindOrRequests');
+        if (navItem) {
+          navItem.textContent = 'Student Requests';
+          navItem.setAttribute('href', 'findmentor.html');
+        }
+      }
+    } catch {}
+  </script>
+
+  <div class="sidebar">
+    <h2 class="brand">MentorConnect</h2>
+    <nav class="nav">
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="findmentor.html" class="nav-link" id="navFindOrRequests">Find Mentors</a>
+      <a href="messages.html" class="nav-link">Messages</a>
+      <a href="goals.html" class="nav-link">Goals Assigned</a>
+      <a href="test.html" class="nav-link active">Test</a>
+      <a href="login.html" class="nav-link logout">Logout</a>
+    </nav>
+  </div>
+
+  <div class="main-content">
+    <div class="header">Practice Tests</div>
+
+    <div class="cards">
+      <div class="card reveal show">
+        <div id="root"></div>
+      </div>
+    </div>
+  </div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const logoutLink = document.querySelector(".logout");
+      if (logoutLink) {
+        logoutLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("demo_user");
+          window.location.href = "login.html";
+        });
+      }
+    });
+  </script>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const panel = getComputedStyle(document.documentElement).getPropertyValue('--panel-2') || '#171c26';
+    const borderColor = '#1f2430';
+    const text = getComputedStyle(document.documentElement).getPropertyValue('--text') || '#e8ecf1';
+    const muted = getComputedStyle(document.documentElement).getPropertyValue('--muted') || '#a9b3c7';
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#7c88ff';
+
+    const surface = {
+      background: `linear-gradient(180deg, ${panel}, #121722)`,
+      border: `1px solid ${borderColor}`,
+      borderRadius: 12,
+      padding: 12
+    };
+    const btn = {
+      background: accent.trim() || '#7c88ff',
+      color: '#fff',
+      border: '1px solid #232a3b',
+      borderRadius: 10,
+      padding: '8px 12px',
+      cursor: 'pointer'
+    };
+    const btnGhost = {
+      background: 'transparent',
+      color: text.trim() || '#e8ecf1',
+      border: `1px solid ${borderColor}`,
+      borderRadius: 10,
+      padding: '8px 12px',
+      cursor: 'pointer'
+    };
+    const chip = (active) => ({
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 8,
+      padding: '8px 10px',
+      width: '100%',
+      textAlign: 'left',
+      borderRadius: 10,
+      border: `1px solid ${active ? '#2a3550' : borderColor}`,
+      background: active ? '#1a2030' : 'transparent',
+      cursor: 'pointer'
+    });
+    const badge = (active) => ({
+      width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: active ? '#7c88ff' : '#1a2030', color: active ? '#fff' : '#a9b3c7', fontSize: 12
+    });
+    const subtle = { color: muted.trim() || '#a9b3c7' };
+
+    const TEST_BANK = {
+      iot: {
+        title: 'IoT Fundamentals',
+        description: 'Basic IoT concepts and sensors.',
+        questions: [
+          { id: 'iot-q1', q: 'Which protocol is commonly used by many IoT devices for lightweight messaging?', choices: ['HTTP/1.1', 'FTP', 'MQTT', 'SMTP'], answerIndex: 2 },
+          { id: 'iot-q2', q: 'An IoT sensor that measures temperature is called a:', choices: ['Actuator', 'Transducer', 'Gateway', 'Controller'], answerIndex: 1 },
+          { id: 'iot-q3', q: 'Which layer typically handles device addressing in many IoT stacks?', choices: ['Physical', 'Network', 'Application', 'Presentation'], answerIndex: 1 },
+        ],
+      },
+      dsa: {
+        title: 'DSA Quick Test',
+        description: 'Algorithms & data structures — basics.',
+        questions: [
+          { id: 'dsa-q1', q: 'What is the average time complexity of binary search on a sorted array?', choices: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)'], answerIndex: 1 },
+          { id: 'dsa-q2', q: 'Which data structure uses FIFO order?', choices: ['Stack', 'Queue', 'Tree', 'Graph'], answerIndex: 1 },
+          { id: 'dsa-q3', q: 'Which sorting algorithm is stable?', choices: ['QuickSort', 'HeapSort', 'MergeSort', 'SelectionSort'], answerIndex: 2 },
+        ],
+      },
+      web: {
+        title: 'Web Development Basics',
+        description: 'Frontend & backend fundamentals.',
+        questions: [
+          { id: 'web-q1', q: 'Which HTML element is used to include JavaScript?', choices: ['link', 'script', 'style', 'meta'], answerIndex: 1 },
+          { id: 'web-q2', q: 'What does CSS stand for?', choices: ['Cascading Style Sheets', 'Computer Style Sheets', 'Creative Style System', 'Coded Style Sheets'], answerIndex: 0 },
+          { id: 'web-q3', q: 'Which HTTP method is idempotent?', choices: ['POST', 'DELETE', 'PATCH', 'PUT'], answerIndex: 3 },
+        ],
+      },
+      oop: {
+        title: 'Object-Oriented Programming',
+        description: 'OOP fundamentals and principles.',
+        questions: [
+          { id: 'oop-q1', q: 'Which of these is not a pillar of OOP?', choices: ['Encapsulation', 'Polymorphism', 'Inheritance', 'Compilation'], answerIndex: 3 },
+          { id: 'oop-q2', q: 'Which keyword is used (in many languages) to create a subclass?', choices: ['extends', 'implements', 'inherits', 'super'], answerIndex: 0 },
+          { id: 'oop-q3', q: 'Polymorphism allows:', choices: ['Multiple classes with same name', 'Methods to take many forms', 'Encrypting classes', 'Faster compilation'], answerIndex: 1 },
+        ],
+      },
+    };
+
+    function TopicCard({ id, topic, onStart }) {
+      return (
+        <div style={{...surface, display: 'flex', flexDirection: 'column', gap: 8}}>
+          <div>
+            <h3 style={{margin: 0, marginBottom: 6, fontWeight: 600}}>{topic.title}</h3>
+            <p style={{...subtle, margin: 0}}>{topic.description}</p>
+          </div>
+          <div style={{marginTop: 8, display: 'flex', justifyContent: 'flex-end'}}>
+            <button style={btn} onClick={() => onStart(id)}>Start Test</button>
+          </div>
+        </div>
+      );
+    }
+
+    function QuestionView({ question, selected, onSelect }) {
+      const renderOptionLabel = (opt) => {
+        const isSimpleTag = /^[a-z]+$/i.test(opt) && opt.length <= 10;
+        return isSimpleTag ? <span style={{fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas'}}>&lt;{opt}&gt;</span> : <span>{opt}</span>;
+      };
+
+      return (
+        <div>
+          <div style={{marginBottom: 10}}>
+            <div style={{fontWeight: 500}}>Q: {question.q}</div>
+          </div>
+          <div style={{display: 'grid', gap: 8}}>
+            {question.choices.map((opt, idx) => {
+              const isSelected = selected === idx;
+              return (
+                <button key={idx} onClick={() => onSelect(idx)} type="button" style={chip(isSelected)}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
+                    <div style={badge(isSelected)}>{String.fromCharCode(65 + idx)}</div>
+                    <div>{renderOptionLabel(opt)}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    function Tests() {
+      const [activeTopic, setActiveTopic] = useState(null);
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [answers, setAnswers] = useState({});
+      const [submitted, setSubmitted] = useState(false);
+
+      function startTest(topicKey) {
+        setActiveTopic(topicKey);
+        setCurrentIndex(0);
+        setAnswers({});
+        setSubmitted(false);
+      }
+
+      function handleSelect(choiceIdx) {
+        if (!activeTopic) return;
+        const q = TEST_BANK[activeTopic].questions[currentIndex];
+        setAnswers(prev => ({ ...prev, [q.id]: choiceIdx }));
+      }
+
+      function next() {
+        if (!activeTopic) return;
+        const qLen = TEST_BANK[activeTopic].questions.length;
+        setCurrentIndex(i => Math.min(i + 1, qLen - 1));
+      }
+      function prev() {
+        setCurrentIndex(i => Math.max(i - 1, 0));
+      }
+
+      function submitTest() {
+        setSubmitted(true);
+      }
+
+      function score() {
+        if (!activeTopic) return { total: 0, correct: 0 };
+        const qs = TEST_BANK[activeTopic].questions;
+        let s = 0;
+        for (const q of qs) {
+          if (answers[q.id] === q.answerIndex) s++;
+        }
+        return { total: qs.length, correct: s };
+      }
+
+      if (!activeTopic) {
+        return (
+          <div style={{display: 'grid', gap: 12}}>
+            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12}}>
+              {Object.entries(TEST_BANK).map(([key, topic]) => (
+                <TopicCard key={key} id={key} topic={topic} onStart={startTest} />
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      const topic = TEST_BANK[activeTopic];
+      const q = topic.questions[currentIndex];
+      const selected = answers[q.id];
+
+      return (
+        <div style={{display: 'grid', gap: 12}}>
+          <div style={{display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12}}>
+            <div>
+              <h2 style={{margin: 0, fontWeight: 600}}>{topic.title}</h2>
+              <div style={{...subtle}}>{topic.description}</div>
+            </div>
+            <div style={{textAlign: 'right'}}>
+              <div style={{...subtle}}>Question {currentIndex + 1} / {topic.questions.length}</div>
+              <button onClick={() => { setActiveTopic(null); setSubmitted(false); }} style={{...btnGhost, marginTop: 8}} type="button">Exit Test</button>
+            </div>
+          </div>
+
+          {!submitted ? (
+            <div style={{...surface}}>
+              <QuestionView question={q} selected={selected} onSelect={handleSelect} />
+
+              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12}}>
+                <div style={{display: 'flex', gap: 8}}>
+                  <button onClick={prev} disabled={currentIndex === 0} style={{...btnGhost, opacity: currentIndex === 0 ? .5 : 1}} type="button">Previous</button>
+                  <button onClick={next} disabled={currentIndex === topic.questions.length - 1} style={{...btnGhost, opacity: currentIndex === topic.questions.length - 1 ? .5 : 1}} type="button">Next</button>
+                </div>
+
+                <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                  <div style={{...subtle}}>Answered: {Object.keys(answers).length} / {topic.questions.length}</div>
+                  <button onClick={submitTest} style={btn} type="button">Submit</button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{...surface}}>
+              <h3 style={{marginTop: 0}}>Your Results</h3>
+              <div style={{marginBottom: 8}}>
+                {(() => {
+                  const s = score();
+                  return <div style={{fontWeight: 600}}>{s.correct} / {s.total} correct</div>;
+                })()}
+              </div>
+
+              <div style={{display: 'grid', gap: 10}}>
+                {topic.questions.map((qq, idx) => {
+                  const userChoice = answers[qq.id];
+                  const correct = qq.answerIndex;
+                  return (
+                    <div key={qq.id} style={{...surface}}>
+                      <div style={{fontWeight: 600}}>Q{idx + 1}: {qq.q}</div>
+                      <div style={{marginTop: 8, display: 'grid', gap: 6}}>
+                        {qq.choices.map((c, ci) => {
+                          const mark = ci === correct ? ' (correct)' : '';
+                          const my = ci === userChoice ? ' — your choice' : '';
+                          const isSimpleTag = /^[a-z]+$/i.test(c) && c.length <= 10;
+                          const bg = ci === correct ? 'rgba(61,210,204,.08)' : (ci === userChoice ? 'rgba(124,136,255,.08)' : 'transparent');
+                          return (
+                            <div key={ci} style={{border: `1px solid ${borderColor}`, background: bg, borderRadius: 10, padding: '6px 10px'}}>
+                              <span style={{fontWeight: 600, marginRight: 6}}>{String.fromCharCode(65 + ci)}.</span>
+                              {isSimpleTag ? <span style={{fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas'}}>&lt;{c}&gt;</span> : <span>{c}</span>}
+                              <span style={{...subtle, fontSize: 12, marginLeft: 8}}>{(ci === correct) ? '✔' : ''}{my}{mark}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{marginTop: 12, display: 'flex', justifyContent: 'flex-end', gap: 8}}>
+                <button onClick={() => { setSubmitted(false); setCurrentIndex(0); setAnswers({}); }} style={btnGhost} type="button">Retake</button>
+                <button onClick={() => { setActiveTopic(null); setSubmitted(false); }} style={btn} type="button">Back to Topics</button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Tests />);
+  </script>
+</body>
+</html>
